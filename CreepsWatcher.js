@@ -13,6 +13,7 @@ module.exports = {
         this.checkForUnits();
 
         for (var id in Game.creeps) {
+            console.log(Game.creeps);
             var creep = creepsManager.getCreep(id);
 
             creep.doWork();
