@@ -15,6 +15,7 @@ export default class Spawner {
     });
     console.log('spawn.energy', this.spawn.energy);
     // console.log('Game.creeps:', Object.keys(Game.creeps));
+    let harvesters =_.filter(creeps, (creep) => creep.memory.role == type);
 
     creeps.forEach((creep) => {
       console.log('doWork ', creep.name);
@@ -23,15 +24,20 @@ export default class Spawner {
           RoleHarvester.doWork(creep);
           break;
         case 'upgrader':
-          RoleUpgrader.doWork(creep);
+          if (harvesters.length >= 1) {
+            RoleUpgrader.doWork(creep);
+          }
+
           break;
         case 'builder':
-          RoleBuilder.doWork(creep);
+          if (harvesters.length >= 1) {
+            RoleBuilder.doWork(creep);
+          }
           break;
       }
     });
-    this._limitRenew(creeps, 'harvester', 2);
-    this._limitRenew(creeps, 'builder', 1);
+    this._limitRenew(creeps, 'harvester', 3);
+    this._limitRenew(creeps, 'builder', 2);
     this._limitRenew(creeps, 'upgrader', 1);
 
   }
@@ -39,7 +45,11 @@ export default class Spawner {
   _limitRenew(creeps, type, count) {
     var typeCreeps = _.filter(creeps, (creep) => creep.memory.role == type);
     if (typeCreeps.length < count && this._canCreateCreep(type)) {
-      let count = Object.keys(Memory.Spawner.registry[type]).length;
+      let count = 0
+      if (Memory.Spawner.registry[type]) {
+        count += Object.keys(Memory.Spawner.registry[type]).length;
+      }
+
       let name = type + (count  + 1);
       this._createCreep(type, name);
     }

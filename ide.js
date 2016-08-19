@@ -122,3 +122,4 @@ export const STRUCTURE_EXTENSION = 0;
 export const STRUCTURE_SPAWN = 0;
 export const STRUCTURE_TOWER = 0;
 export const FIND_CONSTRUCTION_SITES = 0;
+export const FIND_MY_STRUCTURES = 0;
