@@ -1,152 +1,84 @@
+import RoleHarvester from './role.harvester';
+import RoleUpgrader from './role.upgrader';
+import RoleBuilder from './role.builder';
+import _ from 'lodash';
+
 //noinspection JSUnresolvedVariable
 export default class Spawner {
-  initSpawnQue(){
-    if(Memory.spawnQue == undefined)
-      Memory.spawnQue = [ ];
+  constructor(name) {
+    this.spawn = Game.spawns[name];
   }
 
-  addToQue(creep, unshift) {
-    this.initSpawnQue();
+  watch() {
+    var creeps = _.filter(Game.creeps, (creep) => {
+      return true;//creep.memory.spawn == this.spawn.name;
+    });
+    console.log('spawn.energy', this.spawn.energy);
+    // console.log('Game.creeps:', Object.keys(Game.creeps));
 
-    if(unshift != undefined && unshift === true)
-      Memory.spawnQue.unshift(creep);
-    else
-      Memory.spawnQue.push(creep);
-  }
-
-  spawnNextInQue() {
-    this.initSpawnQue();
-
-    if(!Memory.spawnQue.length)
-      return;
-
-    var spawns = Game.getRoom('1-1').find(Game.MY_SPAWNS, {
-      filter: function(spawn)
-      {
-        return spawn.spawning === undefined || spawn.spawning === null;
+    creeps.forEach((creep) => {
+      console.log('doWork ', creep.name);
+      switch (creep.memory.role) {
+        case 'harvester':
+          RoleHarvester.doWork(creep);
+          break;
+        case 'upgrader':
+          RoleUpgrader.doWork(creep);
+          break;
+        case 'builder':
+          RoleBuilder.doWork(creep);
+          break;
       }
     });
+    this._limitRenew(creeps, 'harvester', 2);
+    this._limitRenew(creeps, 'builder', 1);
+    this._limitRenew(creeps, 'upgrader', 1);
 
-    if(!spawns.length)
-      return;
-
-    var role = Memory.spawnQue[0];
-
-    if(typeof role == "string")
-    {
-      role = { type: role, memory: { } };
-    }
-
-    var me = this;
-    var toSpawnAt = spawns.filter(function(spawn)
-    {
-      return me.canSpawn(spawn, role.type);
-    });
-
-    if(! toSpawnAt.length)
-      return;
-
-    toSpawnAt = toSpawnAt[0];
-
-    this.spawn(role.type, role.memory, toSpawnAt);
-
-    Memory.spawnQue.shift();
   }
 
-  spawn(role, memory, spawnPoint) {
-    if(!spawnPoint)
-      spawnPoint = Game.spawns.Spawn1;
-
-    var manager = require('roleManager');
-
-    if(!manager.roleExists(role))
-    {
-      return;
+  _limitRenew(creeps, type, count) {
+    var typeCreeps = _.filter(creeps, (creep) => creep.memory.role == type);
+    if (typeCreeps.length < count && this._canCreateCreep(type)) {
+      let count = Object.keys(Memory.Spawner.registry[type]).length;
+      let name = type + (count  + 1);
+      this._createCreep(type, name);
     }
-
-    if(!this.canSpawn(spawnPoint, role))
-    {
-      return;
+  }
+  _canCreateCreep(type) {
+    let condition = this.spawn.spawning == null || this.spawn.spawning == undefined;
+    switch (type) {
+      case 'harvester':
+        condition &= this.spawn.energy >= RoleHarvester.cost;
+        break;
+      case 'upgrader':
+        condition &= this.spawn.energy >= RoleUpgrader.cost;
+        break;
+      case 'builder':
+        condition &= this.spawn.energy >= RoleBuilder.cost;
+        break;
     }
-
-    if(memory == undefined)
-      memory = { };
-
-    memory['role'] = role;
-
-    var nameCount = 0;
-    var name = null;
-    while(name == null)
-    {
-      nameCount++;
-      var tryName = role + nameCount;
-      if(Game.creeps[tryName] == undefined)
-        name = tryName;
-    }
-
-    console.log('Spawning ' + role);
-    spawnPoint.createCreep(manager.getRoleBodyParts(role), name, memory);
+    return condition;
   }
 
-  canSpawn(spawnPoint, role) {
-    if(typeof spawnPoint == "string" && role == undefined)
-    {
-      role = spawnPoint;
-      spawnPoint = Game.spawns.Spawn1;
+  _createCreep(type, name) {
+    switch (type) {
+      case 'harvester':
+        this.spawn.createCreep(RoleHarvester.body, name, {role: 'harvester', spawn: this.spawn.name});
+        break;
+      case 'upgrader':
+        this.spawn.createCreep(RoleUpgrader.body, name, {role: 'upgrader', spawn: this.spawn.name});
+        break;
+      case 'builder':
+        this.spawn.createCreep(RoleBuilder.body, name, {role: 'builder', spawn: this.spawn.name});
+        break;
     }
-
-    return spawnPoint.energy >= this.spawnCost(role)
-      && (spawnPoint.spawning == null
-      || spawnPoint.spawning == undefined);
   }
 
-  spawnCost(role) {
-    var manager = require('roleManager');
-    var parts = manager.getRoleBodyParts(role);
-
-    var total = 0;
-    for(var index in parts)
-    {
-      var part = parts[index];
-      switch(part)
-      {
-        case Game.MOVE:
-          total += 50
-          break;
-
-        case Game.WORK:
-          total += 20
-          break;
-
-        case Game.CARRY:
-          total += 50
-          break;
-
-        case Game.ATTACK:
-          total += 100
-          break;
-
-        case Game.RANGED_ATTACK:
-          total += 150
-          break;
-
-        case Game.HEAL:
-          total += 200
-          break;
-
-        case Game.TOUGH:
-          total += 5
-          break;
-      }
-    }
-
-    return total;
-  }
-
-  killAll(role) {
-    for(var i in Game.creeps) {
-      if(role == undefined || Game.creeps[i].memory.role == role)
+  static killAll(role) {
+    for (var i in Game.creeps) {
+      if (role == undefined || Game.creeps[i].memory.role == role) {
         Game.creeps[i].suicide();
+      }
     }
   }
 }
