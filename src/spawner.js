@@ -24,13 +24,13 @@ export default class Spawner {
           RoleHarvester.doWork(creep);
           break;
         case 'upgrader':
-          if (harvesters.length >= 1) {
+          if (harvesters.length >= 3) {//don't grab spawn for create harvester
             RoleUpgrader.doWork(creep);
           }
 
           break;
         case 'builder':
-          if (harvesters.length >= 1) {
+          if (harvesters.length >= 3) {//don't grab spawn for create harvester
             RoleBuilder.doWork(creep);
           }
           break;
