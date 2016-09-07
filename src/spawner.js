@@ -10,49 +10,47 @@ export default class Spawner {
   }
 
   watch() {
-    var creeps = _.filter(Game.creeps, (creep) => {
-      return true;//creep.memory.spawn == this.spawn.name;
-    });
-    console.log('spawn.energy', this.spawn.energy);
-    // console.log('Game.creeps:', Object.keys(Game.creeps));
-    let harvesters = _.filter(creeps, (creep) => creep.memory.role == 'harvesters');
-
-    creeps.forEach((creep) => {
-      console.log('doWork ', creep.name);
+    var harvesterCount = (_.filter(Game.creeps, (creep) => creep.memory.role == 'harvester')).length;
+    for (var i in Game.creeps) {
+      var creep = Game.creeps[i];
       switch (creep.memory.role) {
         case 'harvester':
           RoleHarvester.doWork(creep);
           break;
         case 'upgrader':
-          if (harvesters.length >= 3) {//don't grab spawn for create harvester
+          if (harvesterCount >= 3) {//don't grab spawn for create harvester
             RoleUpgrader.doWork(creep);
           }
 
           break;
         case 'builder':
-          if (harvesters.length >= 3) {//don't grab spawn for create harvester
+          if (harvesterCount >= 3) {//don't grab spawn for create harvester
             RoleBuilder.doWork(creep);
           }
           break;
       }
-    });
-    this._limitRenew(creeps, 'harvester', 3);
-    if (harvesters.length >= 3) {//don't grab spawn for create harvester
-      this._limitRenew(creeps, 'builder', 2);
-      this._limitRenew(creeps, 'upgrader', 1);
+    }
+
+    this._limitRenew(Game.creeps, 'harvester', 3);
+
+    if (harvesterCount >= 3) {//don't grab spawn for create harvester
+      this._limitRenew(Game.creeps, 'builder', 1);
+      this._limitRenew(Game.creeps, 'upgrader', 1);
     }
 
   }
 
   _limitRenew(creeps, type, count) {
+
     var typeCreeps = _.filter(creeps, (creep) => creep.memory.role == type);
+
     if (typeCreeps.length < count && this._canCreateCreep(type)) {
       let count = 0;
       if (Memory.Spawner.registry[type]) {
         count += Object.keys(Memory.Spawner.registry[type]).length;
       }
 
-      let name = type + (count  + 1);
+      let name = type + (count  + 1) + '_' + Math.floor(Math.random() * 101);
       this._createCreep(type, name);
     }
   }
@@ -73,9 +71,10 @@ export default class Spawner {
   }
 
   _createCreep(type, name) {
+    console.log('_createCreep', type, name);
     switch (type) {
       case 'harvester':
-        this.spawn.createCreep(RoleHarvester.body, name, {role: 'harvester', spawn: this.spawn.name});
+        console.log('_createCreep', this.spawn.createCreep(RoleHarvester.body, name, {role: 'harvester', spawn: this.spawn.name}));
         break;
       case 'upgrader':
         this.spawn.createCreep(RoleUpgrader.body, name, {role: 'upgrader', spawn: this.spawn.name});

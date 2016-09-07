@@ -8,40 +8,28 @@ export default class RoleHarvester{
     if (creep.carry.energy < creep.carryCapacity) {
       RoleHarvester._goToSource(creep);
     } else {
-      var targets = RoleHarvester._findTargets(creep);
-      if (targets.length > 0) {
-        RoleHarvester.goToTarget(creep, targets);
-      } else {
-        creep.say('No targets!');
-        creep.moveTo(Game.spawns[creep.memory.spawn]);
-      }
+      RoleHarvester._goToSpawn(creep);
     }
   }
-  static goToTarget(creep, targets, i = 0) {
+  static _goToSpawn(creep) {
 
-    let action = creep.transfer(targets[i], RESOURCE_ENERGY);
-    if (creep.name == 'harvester1') {
-      console.log('goToTarget', action);
-    }
+    var spawn = Game.spawns[creep.memory.spawn];
+
+    let action = creep.transfer(spawn, RESOURCE_ENERGY);
 
     if (action == ERR_NOT_IN_RANGE) {
-      creep.moveTo(targets[i]);
+      creep.moveTo(spawn);
     }
   }
 
   static _goToSource(creep) {
-    var sources = creep.room.find(FIND_SOURCES);
-    if (creep.harvest(sources[0]) == ERR_NOT_IN_RANGE) {
-      creep.moveTo(sources[0]);
+    if (!creep.memory.nearestSourceId) {
+      creep.memory.nearestSourceId = creep.pos.findClosestByRange(FIND_SOURCES).id;
     }
-  }
-  static _findTargets(creep) {
-    return creep.room.find(FIND_STRUCTURES, {
-      filter: (structure) => {
-        return (structure.structureType == STRUCTURE_EXTENSION ||
-          structure.structureType == STRUCTURE_SPAWN ||
-          structure.structureType == STRUCTURE_TOWER) && structure.energy < structure.energyCapacity;
-      }
-    });
+    var target = Game.getObjectById(creep.memory.nearestSourceId);
+
+    if (creep.harvest(target) == ERR_NOT_IN_RANGE) {
+      creep.moveTo(target);
+    }
   }
 }
