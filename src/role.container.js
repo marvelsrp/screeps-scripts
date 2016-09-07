@@ -1,14 +1,14 @@
 'use strict';
 
-export default class RoleHarvester{
-  static body = [MOVE, WORK, WORK, CARRY];
+export default class RoleContainer{
+  static body = [MOVE, MOVE, CARRY, CARRY, CARRY, CARRY];
   static cost = 300;
   static doWork(creep) {
 
     if (creep.carry.energy < creep.carryCapacity) {
-      RoleHarvester._goToSource(creep);
+      RoleContainer._goToContainer(creep);
     } else {
-      RoleHarvester._goToSpawn(creep);
+      RoleContainer._goToSpawn(creep);
     }
   }
   static _goToSpawn(creep) {
@@ -22,11 +22,10 @@ export default class RoleHarvester{
     }
   }
 
-  static _goToSource(creep) {
-    var target = Game.getObjectById(creep.memory.sourceId);
+  static _goToContainer(creep) {
+    var target = Game.getObjectById(creep.memory.containerId);
     if (creep.harvest(target) == ERR_NOT_IN_RANGE) {
       creep.moveTo(target);
     }
-
   }
 }

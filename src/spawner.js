@@ -1,39 +1,54 @@
 import RoleHarvester from './role.harvester';
 import RoleUpgrader from './role.upgrader';
 import RoleBuilder from './role.builder';
-import _ from 'lodash';
+import RoleContainer from './role.container';
 
+import _ from 'lodash';
+if (!Memory.sourcesCounter){
+  Memory.sourcesCounter = 0;
+}
 //noinspection JSUnresolvedVariable
 export default class Spawner {
+
+  limits = {
+    harvester: 6,
+    upgrader: 1,
+    builder: 1,
+    container: 1,
+    sources: 2
+  };
   constructor(name) {
     this.spawn = Game.spawns[name];
   }
 
   watch() {
     var harvesterCount = (_.filter(Game.creeps, (creep) => creep.memory.role == 'harvester')).length;
-    for (var i in Game.creeps) {
-      var creep = Game.creeps[i];
+    for (let i in Game.creeps) {
+      let creep = Game.creeps[i];
       switch (creep.memory.role) {
         case 'harvester':
           RoleHarvester.doWork(creep);
           break;
         case 'upgrader':
-          if (harvesterCount >= 3) {//don't grab spawn for create harvester
+          if (harvesterCount >= this.limits.harvester) {//don't grab spawn for create harvester
             RoleUpgrader.doWork(creep);
           }
 
           break;
         case 'builder':
-          if (harvesterCount >= 3) {//don't grab spawn for create harvester
+          if (harvesterCount >= this.limits.harvester) {//don't grab spawn for create harvester
             RoleBuilder.doWork(creep);
           }
+          break;
+        case 'container':
+          RoleContainer.doWork(creep);
           break;
       }
     }
 
-    this._limitRenew(Game.creeps, 'harvester', 3);
+    this._limitRenew(Game.creeps, 'harvester', this.limits.harvester);
 
-    if (harvesterCount >= 3) {//don't grab spawn for create harvester
+    if (harvesterCount >= this.limits.harvester) {//don't grab spawn for create harvester
       this._limitRenew(Game.creeps, 'builder', 1);
       this._limitRenew(Game.creeps, 'upgrader', 1);
     }
@@ -60,6 +75,9 @@ export default class Spawner {
       case 'harvester':
         condition &= this.spawn.energy >= RoleHarvester.cost;
         break;
+      case 'container':
+        condition &= this.spawn.energy >= RoleContainer.cost;
+        break;
       case 'upgrader':
         condition &= this.spawn.energy >= RoleUpgrader.cost;
         break;
@@ -74,7 +92,19 @@ export default class Spawner {
     console.log('_createCreep', type, name);
     switch (type) {
       case 'harvester':
-        console.log('_createCreep', this.spawn.createCreep(RoleHarvester.body, name, {role: 'harvester', spawn: this.spawn.name}));
+        if (Memory.sourcesCounter < this.limits.sources - 1) {
+          Memory.sourcesCounter ++;
+        } else {
+          Memory.sourcesCounter = 0;
+        }
+        let sources = this.spawn.room.find(FIND_SOURCES_ACTIVE);
+        let sourceId = sources[Memory.sourcesCounter].id;
+        this.spawn.createCreep(RoleHarvester.body, name, {role: 'harvester', spawn: this.spawn.name, sourceId: sourceId});
+        break
+      case 'container':
+        let containers = this.spawn.room.find(FIND_CONTAINER);
+        let containerId = containers[0].id;
+        this.spawn.createCreep(RoleHarvester.body, name, {role: 'harvester', spawn: this.spawn.name, containerId: containerId});
         break;
       case 'upgrader':
         this.spawn.createCreep(RoleUpgrader.body, name, {role: 'upgrader', spawn: this.spawn.name});

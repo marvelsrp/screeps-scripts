@@ -1,8 +1,8 @@
 'use strict';
 
 export default class RoleBuilder{
-  static body = [MOVE, WORK, CARRY];
-  static cost = 200;
+  static body = [MOVE, WORK, CARRY, CARRY, CARRY];
+  static cost = 300;
 
   static doWork(creep) {
     if (creep.memory.building && creep.carry.energy == 0) {
